@@ -59,14 +59,16 @@ public class NormalAutoClicker extends SubMode<IAutoClicker> {
 
             if (rightClick && ((Mouse.isButtonDown(1) && !Mouse.isButtonDown(0)) || always)) {
                 parent.click();
-
                 if (Math.random() > 0.9) {
                     parent.click();
                 }
             }
 
-            if (leftClick && ticksDown > 1 && (!Mouse.isButtonDown(1) || always)) {
+            if (leftClick && ticksDown >= 1 && (!Mouse.isButtonDown(1) || always)) {
                 parent.click();
+                if (butterFly.isToggled() && Math.random() > 0.9) {
+                    parent.click();
+                }
             }
 
             this.clickStopWatch.start();
