@@ -884,9 +884,11 @@ public class KillAura extends IAutoClicker {
 
     @Override
     public boolean click() {
-        if (swing)
+        if (swing) {
             attack = true;
-        return swing;
+            return true;
+        }
+        return false;
     }
 
     private void doAttack(Entity target, boolean swingWhileBlocking) {
