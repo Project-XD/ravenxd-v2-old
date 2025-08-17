@@ -1,5 +1,5 @@
 name: Suggestion / 建议
-description: "Suggest a change to improve the Raven XD / 建议一个改动以改善Raven XD"
+description: "Suggest a change to improve the Raven XD v2 / 建议一个改动以改善Raven XD v2"
 labels: ["type:enhancement", "status:unconfirmed"]
 body:
 - type: markdown
@@ -28,7 +28,7 @@ body:
       - "Adding a different kind of feature."
       - "Changing the settings of existing features."
       - "Porting existing features to a different Minecraft version."
-      - "Turning a Raven XD feature into a standalone mod."
+      - "Turning a Raven XD v2 feature into a standalone mod."
       - "Removing an old feature that doesn't work anymore."
       - "Other (please explain in description)"
   validations:

@@ -87,6 +87,6 @@ public abstract class MixinMinecraft {
 
     @Inject(method = "createDisplay", at = @At(value = "RETURN"))
     private void onSetTitle(@NotNull CallbackInfo ci) {
-        Display.setTitle(String.format("%s %s", Client.NAME, Client.VERSION));
+        Display.setTitle(String.format("%s%s", Client.NAME, Client.VERSION));
     }
 }

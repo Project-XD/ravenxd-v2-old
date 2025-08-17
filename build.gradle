@@ -19,8 +19,8 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'java'
 
-group = "keystrokesmod"
-archivesBaseName = "raven-XD"
+group = "fullbright"
+archivesBaseName = "ravenXD-v2"
 //version = "Dev"
 
 compileJava {

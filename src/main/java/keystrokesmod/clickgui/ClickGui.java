@@ -128,12 +128,13 @@ public class ClickGui extends GuiScreen {
             getFont().drawCenteredString("e", wd - w_c, h + 5, Utils.getChroma(2L, 600L));
             getFont().drawCenteredString("n", wd - w_c, h + 15, Utils.getChroma(2L, 300L));
             getFont().drawCenteredString("XD", wd + 1 + w_c, h + 30, Utils.getChroma(2L, 0L));
-            this.drawVerticalLine(wd - 10 - w_c, h - 30, h + 43, Color.white.getRGB());
-            this.drawVerticalLine(wd + 10 + w_c, h - 30, h + 43, Color.white.getRGB());
+            getFont().drawCenteredString("v2", wd + 1 + w_c, h + 40, Utils.getChroma(2L, 0L));
+            this.drawVerticalLine(wd - 10 - w_c, h - 30, h + 53, Color.white.getRGB());
+            this.drawVerticalLine(wd + 10 + w_c, h - 30, h + 53, Color.white.getRGB());
             if (this.aL != null) {
                 r = this.aL.getValueInt(0, 20, 2);
                 this.drawHorizontalLine(wd - 10, wd - 10 + r, h - 29, -1);
-                this.drawHorizontalLine(wd + 10, wd + 10 - r, h + 42, -1);
+                this.drawHorizontalLine(wd + 10, wd + 10 - r, h + 52, -1);
             }
         }
 
