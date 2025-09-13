@@ -31,6 +31,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ClickGui extends GuiScreen {
+    private GuiTextField searchField;
+    private String searchQuery = "";
+    private List<SearchResult> searchResults = new ArrayList<>();
+    private Module highlightedModule = null;
+    private long highlightStartTime = 0;
+    private static final int HIGHLIGHT_DURATION = 1500; // 1.5 seconds
+    private static final int MAX_VISIBLE_RESULTS = 8;
+    private static final int RESULT_HEIGHT = 15;
     private ScheduledFuture<?> sf;
     private Timer aT;
     private Timer aL;
@@ -50,6 +58,19 @@ public class ClickGui extends GuiScreen {
      */
     private int guiYMoveLeft = 0;
 
+    // Add this class to handle search results
+    private static class SearchResult {
+        final Module module;
+        final CategoryComponent categoryComponent;
+        final ModuleComponent moduleComponent;
+
+        SearchResult(Module module, CategoryComponent categoryComponent, ModuleComponent moduleComponent) {
+            this.module = module;
+            this.categoryComponent = categoryComponent;
+            this.moduleComponent = moduleComponent;
+        }
+    }
+
     public ClickGui() {
         int y = 5;
         Module.category[] values;
@@ -64,6 +85,25 @@ public class ClickGui extends GuiScreen {
             categories.put(c, f);
             clickHistory.add(c);
             y += 20;
+        }
+    }
+
+    // Add method to update search results
+    private void updateSearchResults() {
+        searchResults.clear();
+        String query = searchQuery.toLowerCase();
+        if (!query.isEmpty()) {
+            for (Map.Entry<Module.category, CategoryComponent> entry : categories.entrySet()) {
+                CategoryComponent categoryComponent = entry.getValue();
+                for (IComponent comp : categoryComponent.getModules()) {
+                    if (comp instanceof ModuleComponent) {
+                        ModuleComponent moduleComponent = (ModuleComponent) comp;
+                        if (moduleComponent.mod.getName().toLowerCase().contains(query)) {
+                            searchResults.add(new SearchResult(moduleComponent.mod, categoryComponent, moduleComponent));
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -88,15 +128,84 @@ public class ClickGui extends GuiScreen {
         this.sf = Client.getExecutor().schedule(() -> (this.aL = new Timer(650.0F)).start(), 650L, TimeUnit.MILLISECONDS);
     }
 
+    // Add to initGui method
     public void initGui() {
         super.initGui();
         this.sr = new ScaledResolution(this.mc);
-        (this.c = new GuiTextField(1, this.mc.fontRendererObj, 22, this.height - 100, 150, 20)).setMaxStringLength(256);
+        
+        // Add search field at the top of the screen
+        this.searchField = new GuiTextField(0, this.mc.fontRendererObj, 5, 5, 150, 20);
+        this.searchField.setMaxStringLength(32);
+        
+        // Move existing command line text field initialization below
+        this.c = new GuiTextField(1, this.mc.fontRendererObj, 22, this.height - 100, 150, 20);
+        this.c.setMaxStringLength(256);
         this.buttonList.add(this.s = new GuiButtonExt(2, 22, this.height - 70, 150, 20, "Send"));
         this.s.visible = CommandLine.a;
     }
 
-    public void drawScreen(int x, int y, float p) {
+    // Modify drawScreen to show search results
+    public void drawScreen(int mouseX, int mouseY, float p) {
+        // Draw search field
+        this.searchField.drawTextBox();
+        
+        // Draw search results
+        if (!searchQuery.isEmpty()) {
+            int startY = 30; // Position below search bar
+            int maxResults = Math.min(searchResults.size(), MAX_VISIBLE_RESULTS);
+            
+            // Draw results background
+            drawRect(5, startY, 155, startY + (maxResults * RESULT_HEIGHT), new Color(0, 0, 0, 180).getRGB());
+            
+            // Draw results
+            for (int i = 0; i < maxResults; i++) {
+                SearchResult result = searchResults.get(i);
+                int resultY = startY + (i * RESULT_HEIGHT);
+                
+                // Draw result background
+                int bgColor = result.module.isEnabled() ? 
+                    new Color(40, 120, 40, 180).getRGB() : 
+                    new Color(30, 30, 30, 180).getRGB();
+                drawRect(6, resultY, 154, resultY + RESULT_HEIGHT - 1, bgColor);
+                
+                // Draw module name
+                getFont().drawString(result.module.getName(), 8, resultY + 3, -1);
+            }
+        }
+
+        // Draw highlight effect if needed
+        if (highlightedModule != null) {
+            long timeSinceHighlight = System.currentTimeMillis() - highlightStartTime;
+            if (timeSinceHighlight < HIGHLIGHT_DURATION) {
+                // Find and highlight the module
+                for (CategoryComponent category : categories.values()) {
+                    for (IComponent comp : category.getModules()) {
+                        if (comp instanceof ModuleComponent) {
+                            ModuleComponent moduleComp = (ModuleComponent) comp;
+                            if (moduleComp.mod == highlightedModule) {
+                                // Get the actual position of the module component using the 'o' field
+                                int moduleX = category.getX();
+                                int moduleY = category.getY() + moduleComp.o;
+                                int moduleWidth = category.gw();
+                                int moduleHeight = 12; // Standard height for module components
+                                
+                                // Draw highlight effect
+                                int alpha = (int)(255 * (1 - (float)timeSinceHighlight / HIGHLIGHT_DURATION));
+                                int highlightColor = new Color(255, 255, 0, alpha).getRGB();
+                                drawRect(moduleX - 2, moduleY - 2,
+                                       moduleX + moduleWidth + 2,
+                                       moduleY + moduleHeight + 2,
+                                       highlightColor);
+                            }
+                        }
+                    }
+                }
+            } else {
+                highlightedModule = null;
+            }
+        }
+
+        // Rest of the original drawScreen code...
         move:
         if (guiYMoveLeft != 0) {
             int step = (int) (guiYMoveLeft * 0.15);
@@ -141,16 +250,16 @@ public class ClickGui extends GuiScreen {
         for (Module.category category : clickHistory) {
             CategoryComponent c = categories.get(category);
             c.rf(getFont());
-            c.up(x, y);
+            c.up(mouseX, mouseY);
 
             for (IComponent m : c.getModules()) {
-                m.drawScreen(x, y);
+                m.drawScreen(mouseX, mouseY);
             }
         }
 
         GL11.glColor3f(1.0f, 1.0f, 1.0f);
         if (!Gui.removePlayerModel.isToggled()) {
-            GuiInventory.drawEntityOnScreen(this.width + 15 - this.aE.getValueInt(0, 40, 2), this.height - 10, 40, (float) (this.width - 25 - x), (float) (this.height - 50 - y), this.mc.thePlayer);
+            GuiInventory.drawEntityOnScreen(this.width + 15 - this.aE.getValueInt(0, 40, 2), this.height - 10, 40, (float) (this.width - 25 - mouseX), (float) (this.height - 50 - mouseY), this.mc.thePlayer);
         }
 
 
@@ -178,7 +287,7 @@ public class ClickGui extends GuiScreen {
             this.c.xPosition = x2;
             this.s.xPosition = x2;
             this.c.drawTextBox();
-            super.drawScreen(x, y, p);
+            super.drawScreen(mouseX, mouseY, p);
         } else if (CommandLine.b) {
             CommandLine.b = false;
         }
@@ -186,6 +295,75 @@ public class ClickGui extends GuiScreen {
         if (delayedAction != null)
             delayedAction.run();
         delayedAction = null;
+    }
+
+    // Modify mouseClicked to handle search result clicks
+    public void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        this.searchField.mouseClicked(mouseX, mouseY, mouseButton);
+        
+        // Handle search result clicks
+        if (!searchQuery.isEmpty() && mouseX >= 5 && mouseX <= 155) {
+            int startY = 30;
+            int maxResults = Math.min(searchResults.size(), MAX_VISIBLE_RESULTS);
+            
+            for (int i = 0; i < maxResults; i++) {
+                int resultY = startY + (i * RESULT_HEIGHT);
+                if (mouseY >= resultY && mouseY <= resultY + RESULT_HEIGHT) {
+                    SearchResult result = searchResults.get(i);
+                    if (mouseButton == 0) { // Left click
+                        result.module.toggle();
+                    } else if (mouseButton == 1) { // Right click
+                        highlightedModule = result.module;
+                        highlightStartTime = System.currentTimeMillis();
+                    }
+                    return;
+                }
+            }
+        }
+        
+        // Rest of the original mouseClicked code...
+        Iterator<CategoryComponent> var4 = clickHistory.stream()
+                .map(category -> categories.get(category))
+                .iterator();
+
+        while (true) {
+            CategoryComponent category = null;
+            do {
+                do {
+                    if (!var4.hasNext()) {
+                        if (CommandLine.a) {
+                            this.c.mouseClicked(mouseX, mouseY, mouseButton);
+                            super.mouseClicked(mouseX, mouseY, mouseButton);
+                        }
+
+                        if (category != null) {
+                            clickHistory.remove(category.categoryName);
+                            clickHistory.add(category.categoryName);
+                        }
+                        return;
+                    }
+
+                    category = var4.next();
+                    if (category.v(mouseX, mouseY) && !category.i(mouseX, mouseY) && !category.d(mouseX, mouseY) && mouseButton == 0) {
+                        category.d(true);
+                        category.dragStartX = mouseX - category.getX();
+                        category.dragStartY = mouseY - category.getY();
+                    }
+
+                    if (category.d(mouseX, mouseY) && mouseButton == 0) {
+                        category.mouseClicked(!category.fv());
+                    }
+
+                    if (category.i(mouseX, mouseY) && mouseButton == 0) {
+                        category.cv(!category.p());
+                    }
+                } while (!category.fv());
+            } while (category.getModules().isEmpty());
+
+            for (IComponent c : category.getModules()) {
+                c.onClick(mouseX, mouseY, mouseButton);
+            }
+        }
     }
 
     @Override
@@ -207,53 +385,6 @@ public class ClickGui extends GuiScreen {
         }
     }
 
-
-
-    public void mouseClicked(int x, int y, int m) throws IOException {
-        Iterator<CategoryComponent> var4 = clickHistory.stream()
-                .map(category -> categories.get(category))
-                .iterator();
-
-        while (true) {
-            CategoryComponent category = null;
-            do {
-                do {
-                    if (!var4.hasNext()) {
-                        if (CommandLine.a) {
-                            this.c.mouseClicked(x, y, m);
-                            super.mouseClicked(x, y, m);
-                        }
-
-                        if (category != null) {
-                            clickHistory.remove(category.categoryName);
-                            clickHistory.add(category.categoryName);
-                        }
-                        return;
-                    }
-
-                    category = var4.next();
-                    if (category.v(x, y) && !category.i(x, y) && !category.d(x, y) && m == 0) {
-                        category.d(true);
-                        category.dragStartX = x - category.getX();
-                        category.dragStartY = y - category.getY();
-                    }
-
-                    if (category.d(x, y) && m == 0) {
-                        category.mouseClicked(!category.fv());
-                    }
-
-                    if (category.i(x, y) && m == 0) {
-                        category.cv(!category.p());
-                    }
-                } while (!category.fv());
-            } while (category.getModules().isEmpty());
-
-            for (IComponent c : category.getModules()) {
-                c.onClick(x, y, m);
-            }
-        }
-    }
-
     public void mouseReleased(int x, int y, int s) {
         if (s == 0) {
             for (CategoryComponent category : categories.values()) {
@@ -267,11 +398,17 @@ public class ClickGui extends GuiScreen {
         }
     }
 
-    @Override
+    // Modify keyTyped to handle search field input
     public void keyTyped(char t, int k) {
         if (k == Keyboard.KEY_ESCAPE && !binding()) {
             this.mc.displayGuiScreen(null);
         } else {
+            if (this.searchField.textboxKeyTyped(t, k)) {
+                searchQuery = this.searchField.getText().toLowerCase();
+                updateSearchResults();
+            }
+            
+            // Rest of the original keyTyped code...
             for (CategoryComponent category : categories.values()) {
                 if (category.fv() && !category.getModules().isEmpty()) {
                     for (IComponent module : category.getModules()) {

@@ -115,7 +115,7 @@ public class Watermark extends Module implements Moveable {
         }
 
         String clientName = watermarkText.getInput() == 1 ? customName : "Raven XD";
-        String version = showVersion.isToggled() ? "v" + Client.VERSION : "";
+        String version = showVersion.isToggled() ? Client.VERSION : "";
         String fpsValue = String.valueOf(Minecraft.getDebugFPS());
         String pingValue = "0";
 
