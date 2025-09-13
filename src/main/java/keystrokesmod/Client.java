@@ -31,7 +31,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 @Mod(
         modid = "fullbright",
         name = "fullbright",
-        version = "v2",
+        version = "v2.2",
         acceptedMinecraftVersions = "[1.8.9]"
 )
 public final class Client {

@@ -8,9 +8,9 @@ import java.util.List;
 
 @Unmodifiable
 public final class Const {
-    public static final String NAME = "Raven XD v2";
-    public static final String VERSION = ".1";
+    public static final String NAME = "Raven XD ";
+    public static final String VERSION = "v2.2";
     public static final List<String> CHANGELOG = Collections.unmodifiableList(Arrays.asList(
-            "-[+] **Recode** the entire thing, change to v2"
+            "-[/] **Fix** versions being wonky"
     ));
 }
